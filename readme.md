@@ -62,7 +62,7 @@ We introduce **SPAgent**, a spatial intelligence agent designed to operate in th
 | **External Experts** | `spagent/external_experts/` | Specialized expert models with client/server architecture:<br>- Depth Estimation (**Depth-AnythingV2**)<br>- Image/Video Segmentation (**SAM2**)<br>- Open-vocabulary Detection (**GroundingDINO**)<br>- Vision Language Model (**Moondream**)<br>- 3D Point Cloud Reconstruction (**Pi3**)<br>- YOLO-E Detection & Annotation (**Supervision**)<br>- Each includes client/server implementations and can run as external APIs |
 | **VLLM Models** | `spagent/vllm_models/` | VLLM inference utilities and wrappers:<br>- GPT API wrapper<br>- Qwen API wrapper<br>- Local VLLM inference for Qwen models |
 | **Examples** | `examples/` | Example scripts and usage tutorials:<br>- Evaluation scripts for datasets<br>- Quick start examples<br>- Tool definition examples |
-| **Test** | `test/` | Test scripts for tools and models:<br>- Pi3 tool testing with video frame extraction<br>- Integration tests |
+| **Test** | `test/` | Test scripts for tools and models:<br>- Direct tool testing without LLM Agent (`test_tool.py`)<br>- Pi3 tool testing with video frame extraction (`test_pi3_llm.py`)<br>- Integration tests |
 | **Train** | `train/` | Reinforcement learning training scripts:<br>- GRPO training configurations<br>- LoRA merge and model compression utilities<br>- System prompts for different training modes |
 
 ## 🔍 External Experts
@@ -229,6 +229,43 @@ python examples/evaluation/evaluate_img.py --data_path dataset/Multi-view_Reason
 For more advanced usage patterns, specialized agents, tool mixing strategies, video analysis, and reinforcement learning training, please refer to: **[Advanced Examples](docs/Examples/ADVANCED_EXAMPLES.md)**
 
 ## 🧪 Testing & Development
+
+### Direct Tool Testing (without LLM Agent)
+
+Use `test/test_tool.py` to directly test any external expert tool — no LLM or Agent involved. This is useful for verifying tool deployment, debugging, and development.
+
+```bash
+# Test Pi3: input an image and render from a custom angle
+python test/test_tool.py --tool pi3 --image assets/dog.jpeg --azimuth 45 --elevation -30
+
+# Specify a custom Pi3 server address
+python test/test_tool.py --tool pi3 --image assets/dog.jpeg --azimuth 45 --elevation -30 --server_url http://10.7.8.94:20030
+
+# Use first-person camera view mode
+python test/test_tool.py --tool pi3 --image assets/dog.jpeg --azimuth 90 --elevation 0 --camera_view
+
+# Multiple input images
+python test/test_tool.py --tool pi3 --image img1.jpg img2.jpg --azimuth 45 --elevation -30
+```
+
+You can also call the test function directly in Python:
+
+```python
+from test.test_tool import test_pi3
+
+output_path = test_pi3(
+    image_paths=["assets/dog.jpeg"],
+    azimuth_angle=45,
+    elevation_angle=-30,
+    server_url="http://localhost:20030"
+)
+print(f"Rendered image saved to: {output_path}")
+```
+
+| Test Script | Description |
+|-------------|-------------|
+| `test/test_tool.py` | Direct tool testing without LLM Agent (Pi3, Depth, Segmentation, Detection) |
+| `test/test_pi3_llm.py` | Pi3 integration testing through Agent + LLM |
 
 ### Real Service Mode
 ```python
