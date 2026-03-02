@@ -485,6 +485,7 @@ def evaluate_tool_config(
     max_iterations: int = 3,
     data_collector=None,
     system_prompt: str = None,
+    continuation_hint: str = None,
 ) -> Dict[str, Any]:
     """Evaluate a specific tool configuration
     
@@ -501,6 +502,8 @@ def evaluate_tool_config(
         system_prompt: Optional system prompt template string passed to SPAgent.
                        May contain a {tools_json} placeholder. Defaults to the
                        built-in 3D spatial prompt when None.
+        continuation_hint: Optional next-step instructions for multi-step iterations.
+                           Defaults to auto-selection based on system_prompt.
 
     Returns:
         Evaluation results dictionary
@@ -520,6 +523,7 @@ def evaluate_tool_config(
         max_workers=max_workers,
         data_collector=data_collector,
         system_prompt=system_prompt,
+        continuation_hint=continuation_hint,
     )
     
     print(f"Evaluating {len(data)} samples with {model}")

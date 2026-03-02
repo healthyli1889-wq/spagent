@@ -15,7 +15,7 @@ sys.path.append(str(project_root))
 
 from spagent import SPAgent
 from spagent.core import DataCollector
-from spagent.core.prompts import GENERAL_VISION_SYSTEM_PROMPT
+from spagent.core.prompts import GENERAL_VISION_SYSTEM_PROMPT, GENERAL_VISION_CONTINUATION_HINT
 from spagent.models import GPTModel, QwenModel
 from spagent.tools import (
     SegmentationTool,
@@ -113,6 +113,7 @@ def main():
             max_iterations=args.max_iterations,
             data_collector=data_collector,
             system_prompt=GENERAL_VISION_SYSTEM_PROMPT,
+            continuation_hint=GENERAL_VISION_CONTINUATION_HINT,
         )
         all_results[config_name] = results
         
