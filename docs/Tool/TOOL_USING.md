@@ -39,6 +39,7 @@ external_experts/
 **Usage Examples**:
 - For detailed usage examples, please refer to: [Advanced Examples](../Examples/ADVANCED_EXAMPLES.md)
 - For quick start guide, please refer to: [Quick Start Guide](../../readme.md#-quick-start)
+- For adding custom tools: [How to Add New Tools](../ADDING_NEW_TOOLS.md)
 
 ---
 
