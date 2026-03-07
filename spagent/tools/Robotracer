@@ -81,9 +81,23 @@ class MyCustomTool(Tool):
             logger.error(f"MyCustomTool error: {e}")
             return {"success": False, "error": str(e)}
 
-from .my_custom_tool import MyCustomTool
-
+from .robotracer import RoboTracer
 __all__ = [
     # ... existing tools ...
     'RoboTracer'
 ]
+
+{
+    "type": "object",
+    "properties": {
+        "image": {
+            "type": "string",
+            "description": "Base64-encoded RGB image or file path of the scene"
+        },
+        "prompt": {
+            "type": "string",
+            "description": "Natural language spatial tracing instruction, e.g. 'trace a path from the mug to the drawer handle'"
+        }
+    },
+    "required": ["image", "prompt"]
+}
