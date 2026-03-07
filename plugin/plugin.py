@@ -1338,6 +1338,7 @@ class SPAgentToolCallingScheduler(MultiTurnScheduler):
             ('SegmentationTool', 'segmentation_tool'),
             ('ObjectDetectionTool', 'object_detection_tool'),
             ('Pi3Tool', 'pi3_tool'),
+            ('RoboTracerTool', 'robotracer_tool'),
         ]
         
         for tool_class_name, tool_name in tool_classes:
