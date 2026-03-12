@@ -1,7 +1,7 @@
 """
 Robotracer
 
-Predict 3D spatial trace waypoints for robotic manipulation; 
+Predict 3D spatial trace waypoints for robotic manipulation; 
 Use when: planning a robot arm movement path from A to B in a scene.
 """
 
@@ -30,7 +30,7 @@ class MyCustomTool(Tool):
         self._client = None
         self._init_client()
 
-        def _init_client(self):
+    def _init_client(self):
         """Initialize the robotracer client (mock or real)"""
         if self.use_mock:
             try:                
