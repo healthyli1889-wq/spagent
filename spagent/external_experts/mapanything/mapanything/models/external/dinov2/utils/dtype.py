@@ -33,6 +33,6 @@ def as_torch_dtype(dtype: TypeSpec) -> torch.dtype:
     if isinstance(dtype, str):
         dtype = np.dtype(dtype)
     assert isinstance(dtype, np.dtype), (
-        f"Expected an instance of nunpy dtype, got {type(dtype)}"
+        f"Expected an instance of numpy dtype, got {type(dtype)}"
     )
     return _NUMPY_TO_TORCH_DTYPE[dtype]
