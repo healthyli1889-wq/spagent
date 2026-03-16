@@ -1,1 +1,0 @@
-/home/ubuntu/projects/vggt/demo_gradio.py
