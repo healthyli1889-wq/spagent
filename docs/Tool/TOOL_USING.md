@@ -14,10 +14,13 @@ external_experts/
 │   └──grounding_dino
 │   └──pi3
 │   └──sam2
+│   └──vggt
 ├── GroundingDINO/                  # Open-vocabulary object detection
 ├── SAM2/                          # Image and video segmentation
 ├── Depth_AnythingV2/              # Depth estimation
 ├── Pi3/                           # 3D reconstruction
+├── VGGT/                          # Multi-view 3D reconstruction & camera pose estimation
+├── mapanything/                   # Dense 3D reconstruction via depth estimation
 ├── moondream/                     # Vision language model
 └── supervision/                   # YOLO object detection and annotation tools
 ```
@@ -31,6 +34,8 @@ external_experts/
 | **GroundingDINO** | `ObjectDetectionTool` | Open-vocabulary Object Detection | Detect arbitrary objects based on text descriptions | 20022 | `image_path`, `text_prompt`, `box_threshold`, `text_threshold` |
 | **Moondream** | `MoondreamTool` | Vision Language Model | Image understanding and Q&A, answer natural language questions based on image content | 20024 | `image_path`, `task`, `object_name` |
 | **Pi3** | `Pi3Tool` | 3D Reconstruction | Generate 3D point clouds and multi-view rendered images from a single image | 20030 | `image_path`, `azimuth_angle`, `elevation_angle` |
+| **VGGT** | `VGGTTool` | Multi-view 3D Reconstruction & Camera Pose Estimation | Reconstruct 3D point clouds and estimate camera poses from multiple images or video frames | 20032 | `image_paths`, `azimuth_angle`, `elevation_angle`, `rotation_reference_camera`, `camera_view` |
+| **MapAnything** | `MapAnythingTool` | Dense 3D Reconstruction via Depth Estimation | Reconstruct dense 3D point clouds from multiple images using depth maps and camera poses | 20033 | `image_paths`, `azimuth_angle`, `elevation_angle`, `conf_percentile`, `apply_mask` |
 | **Supervision** | `SupervisionTool` | Object Detection Annotation | YOLO models and visualization tools, general object detection and segmentation | - | `image_path`, `task` ("image_det" or "image_seg") |
 | **YOLO-E** | `YOLOETool` | YOLO-E Detection | High-precision detection with custom classes | - | `image_path`, `task`, `class_names` |
 
@@ -244,7 +249,78 @@ wget https://huggingface.co/yyfz233/Pi3/resolve/main/model.safetensors
 
 ---
 
-### 6. Supervision - Object Detection and Annotation Tools
+### 6. VGGT - Multi-view 3D Reconstruction & Camera Pose Estimation
+
+**Function**: Reconstruct 3D point clouds and estimate camera extrinsics/intrinsics from multiple images using the VGGT-1B model
+
+**Features**:
+- Multi-view input (image list or video frames)
+- Outputs dense 3D point cloud (PLY format) and multi-view rendered images
+- Camera pose estimation (extrinsic & intrinsic matrices)
+- Confidence-based point filtering and Mahalanobis outlier removal
+- Supports custom viewing angles (azimuth & elevation)
+
+**File Structure**:
+```
+VGGT/
+├── vggt_server.py        # Flask server
+├── vggt_client.py        # Client
+└── vggt/                 # VGGT model code
+```
+
+**Weight Download**:
+
+The model is automatically downloaded from HuggingFace on first launch:
+```bash
+# Automatic download (default)
+# python vggt_server.py  →  downloads facebook/VGGT-1B automatically
+
+# Or download manually and pass the path
+huggingface-cli download facebook/VGGT-1B --local-dir checkpoints/vggt
+```
+
+**Resources**:
+- [Official Repository](https://github.com/facebookresearch/vggt)
+- [HuggingFace Model](https://huggingface.co/facebook/VGGT-1B)
+
+---
+
+### 7. MapAnything - Dense 3D Reconstruction via Depth Estimation
+
+**Function**: Reconstruct dense 3D point clouds from multiple images using predicted depth maps and camera poses
+
+**Features**:
+- Dense 3D reconstruction from multi-view images or video frames
+- Built-in edge filtering and confidence-based point masking
+- Outputs dense 3D point cloud (PLY format) and multi-view rendered images
+- Interface compatible with Pi3 for easy comparison
+- Supports custom viewing angles (azimuth & elevation)
+
+**File Structure**:
+```
+mapanything/
+├── mapanything_server.py   # Flask server
+├── mapanything_client.py   # Client
+└── mapanything/            # MapAnything model code
+```
+
+**Weight Download**:
+
+The model is automatically downloaded from HuggingFace on first launch:
+```bash
+# Automatic download (default)
+# python mapanything_server.py  →  downloads facebook/map-anything automatically
+
+# Or pre-download manually
+huggingface-cli download facebook/map-anything --local-dir ~/.cache/huggingface/hub/models--facebook--map-anything
+```
+
+**Resources**:
+- [HuggingFace Model](https://huggingface.co/facebook/map-anything)
+
+---
+
+### 8. Supervision - Object Detection and Annotation Tools
 
 **Function**: YOLO object detection and visualization annotation tools
 
@@ -338,6 +414,15 @@ python spagent/external_experts/GroundingDINO/grounding_dino_server.py \
 python spagent/external_experts/Pi3/pi3_server.py \
   --checkpoint_path checkpoints/pi3/model.safetensors \
   --port 20030
+
+# VGGT multi-view 3D reconstruction service 
+python spagent/external_experts/VGGT/vggt_server.py \
+  --checkpoint_path checkpoints/vggt \
+  --port 20032
+
+# MapAnything dense 3D reconstruction service (downloads facebook/map-anything automatically)
+python spagent/external_experts/mapanything/mapanything_server.py \
+  --port 20033
 
 # Vision language model service
 python spagent/external_experts/moondream/md_server.py \

@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 class MapAnythingClient:
     """MapAnything 3D reconstruction client"""
     
-    def __init__(self, server_url: str = "http://localhost:20022"):
+    def __init__(self, server_url: str = "http://localhost:20033"):
         """
         Initialize client
         
         Args:
-            server_url: Server address, e.g., 'http://localhost:20022'
+            server_url: Server address, e.g., 'http://localhost:20033'
         """
         self.server_url = server_url.rstrip('/')
         self.session = requests.Session()

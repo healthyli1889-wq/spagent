@@ -57,9 +57,9 @@ We introduce **SPAgent**, a spatial intelligence agent designed to operate in th
 | Module | Path | Description |
 |--------|------|-------------|
 | **SPAgent Core** | `spagent/core/` | Core agent architecture:<br>- SPAgent class and agent logic<br>- Tool base classes and registry<br>- Model base classes and wrappers<br>- Unified prompt system<br>- Data collection utilities |
-| **Tools** | `spagent/tools/` | Modular expert tool implementations:<br>- DepthEstimationTool<br>- SegmentationTool<br>- ObjectDetectionTool<br>- SupervisionTool<br>- YOLOETool<br>- MoondreamTool<br>- Pi3Tool |
+| **Tools** | `spagent/tools/` | Modular expert tool implementations:<br>- DepthEstimationTool<br>- SegmentationTool<br>- ObjectDetectionTool<br>- SupervisionTool<br>- YOLOETool<br>- MoondreamTool<br>- Pi3Tool<br>- VGGTTool<br>- MapAnythingTool |
 | **Models** | `spagent/models/` | Model wrappers for different backends:<br>- GPTModel (OpenAI API)<br>- QwenModel (DashScope API)<br>- QwenVLLMModel (local VLLM) |
-| **External Experts** | `spagent/external_experts/` | Specialized expert models with client/server architecture:<br>- Depth Estimation (**Depth-AnythingV2**)<br>- Image/Video Segmentation (**SAM2**)<br>- Open-vocabulary Detection (**GroundingDINO**)<br>- Vision Language Model (**Moondream**)<br>- 3D Point Cloud Reconstruction (**Pi3**)<br>- YOLO-E Detection & Annotation (**Supervision**)<br>- Each includes client/server implementations and can run as external APIs |
+| **External Experts** | `spagent/external_experts/` | Specialized expert models with client/server architecture:<br>- Depth Estimation (**Depth-AnythingV2**)<br>- Image/Video Segmentation (**SAM2**)<br>- Open-vocabulary Detection (**GroundingDINO**)<br>- Vision Language Model (**Moondream**)<br>- 3D Point Cloud Reconstruction (**Pi3**)<br>- Multi-view 3D Reconstruction & Pose Estimation (**VGGT**)<br>- Dense 3D Reconstruction via Depth Estimation (**MapAnything**)<br>- YOLO-E Detection & Annotation (**Supervision**)<br>- Each includes client/server implementations and can run as external APIs |
 | **VLLM Models** | `spagent/vllm_models/` | VLLM inference utilities and wrappers:<br>- GPT API wrapper<br>- Qwen API wrapper<br>- Local VLLM inference for Qwen models |
 | **Examples** | `examples/` | Example scripts and usage tutorials:<br>- Evaluation scripts for datasets<br>- Quick start examples<br>- Tool definition examples |
 | **Test** | `test/` | Test scripts for tools and models:<br>- Pi3 tool testing with video frame extraction<br>- Integration tests |
@@ -74,6 +74,8 @@ We introduce **SPAgent**, a spatial intelligence agent designed to operate in th
 | **GroundingDINO** | 2D | Open-vocabulary Object Detection | 20022 | Detect arbitrary objects based on text descriptions |
 | **Moondream** | 2D | Vision Language Model | 20024 | Small and efficient visual Q&A model, supports image description and Q&A |
 | **Pi3** | 3D | 3D Point Cloud Reconstruction | 20030 | Generate 3D point clouds and multi-view rendered images from a single image |
+| **VGGT** | 3D | Multi-view 3D Point Cloud Reconstruction & Camera Pose Estimation | 20032 | Reconstruct 3D point clouds and estimate camera extrinsics/intrinsics from multiple images using [facebook/VGGT-1B](https://huggingface.co/facebook/VGGT-1B); supports both image lists and video frame input |
+| **MapAnything** | 3D | Dense 3D Point Cloud Reconstruction via Depth Estimation | 20033 | Reconstruct dense 3D point clouds from multiple images using depth maps and camera poses with [facebook/map-anything](https://huggingface.co/facebook/map-anything); interface compatible with Pi3 for easy comparison |
 | **Supervision** | 2D | Object Detection Annotation | - | YOLO models and visualization tools, used for result visualization and post-processing |
 
 ## 🛠️ Installation & Setup

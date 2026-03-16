@@ -17,12 +17,12 @@ logger = logging.getLogger(__name__)
 class VGGTClient:
     """VGGT 3D重建客户端"""
     
-    def __init__(self, server_url: str = "http://localhost:20022"):
+    def __init__(self, server_url: str = "http://localhost:20032"):
         """
         初始化客户端
         
         Args:
-            server_url: 服务器地址，如 'http://localhost:20022'
+            server_url: 服务器地址，如 'http://localhost:20032'
         """
         self.server_url = server_url.rstrip('/')
         self.session = requests.Session()
