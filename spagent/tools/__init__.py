@@ -17,10 +17,11 @@ from .vggt_tool import VGGTTool
 from .mapanything_tool import MapAnythingTool
 from .veo_tool import VeoTool
 from .sora_tool import SoraTool
+from .wan_tool import WanTool
 
 __all__ = [
     'DepthEstimationTool',
-    'SegmentationTool', 
+    'SegmentationTool',
     'ObjectDetectionTool',
     'SupervisionTool',
     'YOLOETool',
@@ -28,7 +29,8 @@ __all__ = [
     'Pi3Tool',
     'Pi3XTool',
     'VGGTTool',
-    'MapAnythingTool'
+    'MapAnythingTool',
     'VeoTool',
     'SoraTool',
+    'WanTool',
 ] 
