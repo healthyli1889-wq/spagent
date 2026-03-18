@@ -14,7 +14,6 @@ from .moondream_tool import MoondreamTool
 from .pi3_tool import Pi3Tool
 from .pi3x_tool import Pi3XTool
 from .robotracer_tool import RoboTracerTool
-from .vggt_tool import VGGTTool
 
 __all__ = [
     'DepthEstimationTool',
