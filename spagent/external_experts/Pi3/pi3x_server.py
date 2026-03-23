@@ -363,8 +363,8 @@ def infer():
         # 新增：选择用于旋转参考的相机索引（1-based，默认1）
         rotation_reference_camera = data.get('rotation_reference_camera', 1)
         # 新增：是否使用相机视角模式（而非全局视角）
-        # camera_view = data.get('camera_view', False)
-        camera_view = True
+        camera_view = data.get('camera_view', False)
+        
 
         # 获取文件名信息（可选）
         image_names = data.get('image_names', [])  # 图片文件名列表
