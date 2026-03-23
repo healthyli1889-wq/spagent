@@ -17,7 +17,11 @@ from .vggt_tool import VGGTTool
 from .mapanything_tool import MapAnythingTool
 from .veo_tool import VeoTool
 from .sora_tool import SoraTool
+<<<<<<< HEAD
 from .qwenvl_tool import QwenVLTool
+=======
+from .wan_tool import WanTool
+>>>>>>> origin/main
 
 __all__ = [
     'DepthEstimationTool',
@@ -32,5 +36,9 @@ __all__ = [
     'MapAnythingTool',
     'VeoTool',
     'SoraTool',
+<<<<<<< HEAD
     'QwenVLTool',
+=======
+    'WanTool',
+>>>>>>> origin/main
 ] 

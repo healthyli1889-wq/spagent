@@ -707,16 +707,146 @@ def _draw_cameras_visualization(ax, camera_centers, camera_poses, current_view_c
         return None, None, None, None, None, None
 
 
+def _render_point_cloud_sfm(points_world, colors, camera_poses, ref_cam_idx,
+                             azim_angle, elev_angle,
+                             output_width=1024, output_height=768):
+    """
+    SfM-style point cloud rendering using pinhole camera projection with z-buffer.
+
+    Projects 3D world points onto a 2D image plane through a virtual camera
+    defined by the reference camera pose rotated by azimuth/elevation angles.
+
+    Args:
+        points_world: (N, 3) world coordinates
+        colors: (N, 3) RGB colors in [0, 1]
+        camera_poses: (M, 4, 4) camera-to-world matrices
+        ref_cam_idx: reference camera index
+        azim_angle: azimuth in degrees (positive = look right)
+        elev_angle: elevation in degrees (positive = look up)
+        output_width: output image width in pixels
+        output_height: output image height in pixels
+
+    Returns:
+        str: base64 encoded PNG image
+    """
+    safe_ref_idx = max(0, min(ref_cam_idx, len(camera_poses) - 1))
+    ref_pose = camera_poses[safe_ref_idx]
+
+    R_cw = ref_pose[:3, :3]
+    t_cw = ref_pose[:3, 3]
+
+    # Rotate virtual camera in its local frame (OpenCV: X=right, Y=down, Z=forward)
+    R_local = np.eye(3)
+    if abs(azim_angle) > 1e-6:
+        R_local = R_local @ R.from_rotvec(np.radians(azim_angle) * np.array([0, 1, 0])).as_matrix()
+    if abs(elev_angle) > 1e-6:
+        R_local = R_local @ R.from_rotvec(np.radians(-elev_angle) * np.array([1, 0, 0])).as_matrix()
+
+    R_virtual_cw = R_cw @ R_local
+
+    # World-to-camera
+    R_wc = R_virtual_cw.T
+    t_wc = -R_wc @ t_cw
+
+    points_cam = (R_wc @ points_world.T).T + t_wc
+
+    # Keep points in front of camera
+    valid_mask = points_cam[:, 2] > 1e-3
+    points_cam = points_cam[valid_mask]
+    colors_valid = np.clip(colors[valid_mask], 0, 1)
+
+    if len(points_cam) == 0:
+        logger.warning("SfM rendering: no points visible from this viewpoint")
+        image = np.ones((output_height, output_width, 3), dtype=np.uint8) * 200
+        buf = io.BytesIO()
+        Image.fromarray(image).save(buf, format='PNG')
+        buf.seek(0)
+        img_b64 = base64.b64encode(buf.read()).decode('utf-8')
+        buf.close()
+        return img_b64
+
+    # Pinhole intrinsics with 140° ultra-wide horizontal FOV
+    fov_h_deg = 140.0
+    fx = output_width / (2 * np.tan(np.radians(fov_h_deg / 2)))
+    fy = fx
+    cx = output_width / 2.0
+    cy = output_height / 2.0
+
+    # Project 3D -> 2D
+    z = points_cam[:, 2]
+    u = (fx * points_cam[:, 0] / z + cx)
+    v = (fy * points_cam[:, 1] / z + cy)
+
+    u_int = np.round(u).astype(np.int32)
+    v_int = np.round(v).astype(np.int32)
+
+    in_bounds = (u_int >= 0) & (u_int < output_width) & (v_int >= 0) & (v_int < output_height)
+    u_int = u_int[in_bounds]
+    v_int = v_int[in_bounds]
+    z_valid = z[in_bounds]
+    colors_proj = colors_valid[in_bounds]
+
+    if len(u_int) == 0:
+        logger.warning("SfM rendering: no points project within image bounds")
+        image = np.ones((output_height, output_width, 3), dtype=np.uint8) * 200
+        buf = io.BytesIO()
+        Image.fromarray(image).save(buf, format='PNG')
+        buf.seek(0)
+        img_b64 = base64.b64encode(buf.read()).decode('utf-8')
+        buf.close()
+        return img_b64
+
+    image = np.ones((output_height, output_width, 3), dtype=np.float32)
+    depth_buf = np.full((output_height, output_width), np.inf, dtype=np.float32)
+
+    # Splat each point to a 3x3 neighborhood for denser coverage.
+    # Use an explicit depth buffer so nearer points always win, even when
+    # splat neighbourhoods of different points overlap across loop iterations.
+    for dy in range(-1, 2):
+        for dx in range(-1, 2):
+            uu = np.clip(u_int + dx, 0, output_width - 1)
+            vv = np.clip(v_int + dy, 0, output_height - 1)
+            lin = vv * output_width + uu
+            order = np.argsort(z_valid)
+            lin_o = lin[order]
+            z_o = z_valid[order]
+            c_o = colors_proj[order]
+            _, first = np.unique(lin_o, return_index=True)
+            lin_u = lin_o[first]
+            z_u = z_o[first]
+            c_u = c_o[first]
+            vv_u = lin_u // output_width
+            uu_u = lin_u % output_width
+            closer = z_u < depth_buf[vv_u, uu_u]
+            depth_buf[vv_u[closer], uu_u[closer]] = z_u[closer]
+            image[vv_u[closer], uu_u[closer]] = c_u[closer]
+
+    image_uint8 = (np.clip(image, 0, 1) * 255).astype(np.uint8)
+
+    buf = io.BytesIO()
+    Image.fromarray(image_uint8).save(buf, format='PNG')
+    buf.seek(0)
+    img_b64 = base64.b64encode(buf.read()).decode('utf-8')
+    buf.close()
+
+    logger.info(f"SfM rendering complete: {len(u_int)} points projected, azim={azim_angle}°, elev={elev_angle}°")
+    return img_b64
+
+
 def _create_view_image(points_sample, colors_sample, camera_centers, camera_poses, cam_idx, 
                       azim_angle, elev_angle, view_name, show_camera_axes=True, show_all_cameras=True,
                       ref_cam_idx: int = 0, camera_view: bool = False):
     """创建单个视角图片"""
-    
+
+    # camera_view模式使用SfM针孔相机投影渲染
     if camera_view:
-        safe_ref_idx = max(0, min(ref_cam_idx, len(camera_poses) - 1))
-        view_cam_pose = camera_poses[safe_ref_idx]
-    else:
-        view_cam_pose = camera_poses[cam_idx]
+        return _render_point_cloud_sfm(
+            points_sample, colors_sample, camera_poses, ref_cam_idx,
+            azim_angle, elev_angle
+        )
+
+    # 以下为全局视角模式的matplotlib渲染
+    view_cam_pose = camera_poses[cam_idx]
     
     if view_cam_pose.shape == (4, 4):
         R_cw = view_cam_pose[:3, :3]
@@ -1010,7 +1140,8 @@ def generate_camera_views(points_filtered, colors_filtered, camera_poses, imgs_r
                         logger.warning(f"返回原始图片失败，回退到点云渲染: {e}")
                 
                 show_camera_axes = view_name in ["camera_front", "camera_left_30", "camera_right_30"]
-                adjusted_elev = elev_offset + 100.0
+                # 全局视角需要补偿100度（坐标系翻转），SfM camera_view不需要
+                adjusted_elev = elev_offset if camera_view else elev_offset + 100.0
                 
                 img_b64 = _create_view_image(
                     points_sample, colors_sample, camera_centers, camera_poses,
@@ -1069,7 +1200,8 @@ def generate_custom_angle_views(points_filtered, colors_filtered, camera_poses, 
         view_images = []
         view_name = f"custom_azim_{azimuth_angle}_elev_{elevation_angle}"
         
-        adjusted_elevation = elevation_angle + 100.0
+        # 全局视角需要补偿100度（坐标系翻转），SfM camera_view不需要
+        adjusted_elevation = elevation_angle if camera_view else elevation_angle + 100.0
         
         img_b64 = _create_view_image(
             points_sample, colors_sample, camera_centers, camera_poses,
