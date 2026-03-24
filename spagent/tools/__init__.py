@@ -14,6 +14,7 @@ from .moondream_tool import MoondreamTool
 from .pi3_tool import Pi3Tool
 from .pi3x_tool import Pi3XTool
 from .robotracer_tool import RoboTracerTool
+from .wan_tool import WanTool
 
 __all__ = [
     'DepthEstimationTool',
@@ -25,5 +26,6 @@ __all__ = [
     'Pi3Tool',
     'Pi3XTool',
     'RoboTracerTool',
-    'VGGTTool'
+    'VGGTTool',
+    'WanTool'
 ] 
