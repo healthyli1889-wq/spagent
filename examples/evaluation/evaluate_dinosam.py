@@ -20,6 +20,8 @@ from spagent.models import GPTModel, QwenModel
 from spagent.tools import (
     SegmentationTool,
     ObjectDetectionTool,
+    Pi3XTool,
+    VeoTool,
 )
 from spagent.utils.utils import (
     load_json_data, 
@@ -36,12 +38,15 @@ from datetime import datetime
 TOOL_SERVERS = {
     "sam2": "http://localhost:20020",
     "grounding_dino": "http://localhost:20022",
+    "pi3x": "http://localhost:20031",  # pi3x
 }
 
 TOOL_CONFIGS = {
     "dinosam": [
         ObjectDetectionTool(use_mock=False, server_url=TOOL_SERVERS["grounding_dino"]),
         SegmentationTool(use_mock=False, server_url=TOOL_SERVERS["sam2"]),
+        Pi3XTool(use_mock=False, server_url=TOOL_SERVERS["pi3x"], mode='inference'),
+        VeoTool(use_mock=False),
     ]
 }
 
