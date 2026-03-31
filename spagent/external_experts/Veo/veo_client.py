@@ -12,11 +12,16 @@ class VeoClient:
     """Client for Google Veo video generation via Gemini API."""
 
     def __init__(self, api_key: str = None, model: str = "veo-3.0-fast-generate-001"):
-        self.api_key = api_key or os.environ.get("GCP_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        self.api_key = (
+            api_key
+            or os.environ.get("GEMINI_API_KEY")
+            or os.environ.get("GOOGLE_API_KEY")
+            or os.environ.get("GCP_API_KEY")
+        )
         if not self.api_key:
             raise ValueError(
-                "Google API key is required. Set GOOGLE_API_KEY env variable "
-                "or pass api_key to VeoClient."
+                "Google API key is required. Set GEMINI_API_KEY (or GOOGLE_API_KEY) "
+                "env variable or pass api_key to VeoClient."
             )
         self.base_url = "https://generativelanguage.googleapis.com/v1beta"
         self.model = model
