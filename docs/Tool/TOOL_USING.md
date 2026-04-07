@@ -628,7 +628,6 @@ python examples/evaluation/evaluate_sora.py \
 
 ---
 
-<<<<<<< HEAD
 ### 11. YOLO26 - Local Object Detection
 
 **Function**: Fast object detection on a single image using Ultralytics YOLO26. No server required — the model runs entirely in-process.
@@ -732,7 +731,6 @@ python examples/evaluation/evaluate_yolo26.py ...
 **Resources**:
 - [Ultralytics YOLO](https://github.com/ultralytics/ultralytics)
 - [YOLO Documentation](https://docs.ultralytics.com/)
-=======
 ### 11. Orient Anything V2 - Object Orientation & Rotation Estimation
 
 **Function**: Unified spatial vision model for 3D orientation, rotational symmetry, and relative pose estimation (NeurIPS 2025 Spotlight)
@@ -836,7 +834,6 @@ result = tool.call(
 **Resources**:
 - [HuggingFace Space (source code)](https://huggingface.co/spaces/Viglong/Orient-Anything-V2)
 - [HuggingFace Checkpoint](https://huggingface.co/Viglong/OriAnyV2_ckpt)
->>>>>>> f2dc763 (feat: #179 support orient anything v2)
 
 ---
 

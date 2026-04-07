@@ -605,7 +605,6 @@ python examples/evaluation/evaluate_sora.py \
 
 ---
 
-<<<<<<< HEAD
 ### 11. YOLO26 - 本地目标检测
 
 **功能**：基于 Ultralytics YOLO26 的本地目标检测，无需启动任何服务器，模型在进程内直接运行。
@@ -709,7 +708,6 @@ python examples/evaluation/evaluate_yolo26.py ...
 **资源链接**：
 - [Ultralytics YOLO](https://github.com/ultralytics/ultralytics)
 - [YOLO 文档](https://docs.ultralytics.com/)
-=======
 ### 11. Orient Anything V2 - 物体朝向与旋转估计
 
 **功能**：统一的空间视觉模型，支持三维朝向估计、旋转对称性检测和两视角间相对位姿估计（NeurIPS 2025 Spotlight）
@@ -816,7 +814,6 @@ result = tool.call(
 **资源链接**：
 - [HuggingFace Space（源码）](https://huggingface.co/spaces/Viglong/Orient-Anything-V2)
 - [HuggingFace 权重](https://huggingface.co/Viglong/OriAnyV2_ckpt)
->>>>>>> f2dc763 (feat: #179 support orient anything v2)
 
 ---
 
