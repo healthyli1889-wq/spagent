@@ -36,6 +36,7 @@ external_experts/
 | **SAM2** | `SegmentationTool` | 图像/视频分割 | 高精度分割任务，精确分割图像中的对象 | 本地服务器（20020） | `image_path`, `point_coords`(可选), `point_labels`(可选), `box`(可选) |
 | **GroundingDINO** | `ObjectDetectionTool` | 开放词汇目标检测 | 基于文本描述检测任意物体 | 本地服务器（20022） | `image_path`, `text_prompt`, `box_threshold`, `text_threshold` |
 | **Moondream** | `MoondreamTool` | 视觉语言模型 | 图像理解和问答，基于图像内容回答自然语言问题 | 本地服务器（20024） | `image_path`, `task`, `object_name` |
+| **Molmo2** | `Molmo2Tool` | 多模态推理与点选定位 | 通过本地 Molmo2 服务执行图像问答、描述、多图比较和 point grounding，可选保存标注图 | 本地服务器（20035） | `image_path`, `task`, `prompt`, `save_annotated`(可选) |
 | **Pi3** | `Pi3Tool` | 3D重建 | 从图像生成3D点云和多视角渲染图 | 本地服务器（20030） | `image_path`, `azimuth_angle`, `elevation_angle` |
 | **Pi3X** | `Pi3XTool` | 3D重建（增强版） | Pi3升级版，更平滑点云、近似度量尺度、可选多模态条件注入 | 本地服务器（20031） | `image_path`, `azimuth_angle`, `elevation_angle` |
 | **VGGT** | `VGGTTool` | 多视角3D重建与相机位姿估计 | 从多张图像或视频帧重建3D点云并估计相机位姿 | 20032 | `image_paths`, `azimuth_angle`, `elevation_angle`, `rotation_reference_camera`, `camera_view` |
@@ -218,6 +219,87 @@ export MOONDREAM_API_KEY="your_api_key"
 **资源链接**:
 - [官方网站](https://moondream.ai/)
 - [API文档](https://docs.moondream.ai/)
+
+---
+
+### 4.1 Molmo2 - 多模态推理与点选定位服务
+
+**功能**: 通过本地 Molmo2 服务执行图像问答、图像描述、多图比较和 point grounding。
+
+**特点**:
+- 与项目里的其他重型工具保持一致，采用本地 server + HTTP client + mock service 的方式
+- 支持单图和多图输入
+- 支持 point grounding，并可选保存标注图
+- 提供 mock 模式，便于开发和测试
+
+**文件结构**:
+```text
+spagent/external_experts/Molmo2/
+├── molmo2_server.py
+├── molmo2_client.py
+├── molmo2_local.py
+├── mock_molmo2_service.py
+├── point_utils.py
+└── __init__.py
+```
+
+**推荐安装**:
+```bash
+pip install -r requirements.txt
+pip install ai2-molmo2 accelerate sentencepiece
+```
+
+或参考官方源码安装:
+```bash
+git clone https://github.com/allenai/molmo2.git
+cd molmo2
+pip install torchcodec
+pip install -e .[all]
+```
+
+**启动服务**:
+```bash
+python spagent/external_experts/Molmo2/molmo2_server.py \
+    --checkpoint allenai/Molmo2-4B \
+    --port 20035
+```
+
+**Python 示例**:
+```python
+from spagent.tools import Molmo2Tool
+
+tool = Molmo2Tool(
+    use_mock=False,
+    server_url="http://localhost:20035",
+)
+
+qa_result = tool.call(
+    image_path="assets/dog.jpeg",
+    task="qa",
+    prompt="图中是什么动物？",
+)
+print(qa_result["response_text"])
+
+point_result = tool.call(
+    image_path="assets/dog.jpeg",
+    task="point",
+    prompt="请指向这只狗。",
+    save_annotated=True,
+)
+print(point_result["result"]["points_by_image"])
+print(point_result["output_path"])  # 默认保存在系统临时目录，除非显式设置 output_dir
+```
+
+**直接测试**:
+```bash
+python test/test_tool.py --tool molmo2 --image assets/dog.jpeg --task qa --prompt "Describe the dog" --server_url http://localhost:20035
+python test/test_tool.py --tool molmo2 --image assets/dog.jpeg --task point --prompt "Point to the dog" --use_mock --save_annotated
+```
+
+**资源链接**:
+- [官方仓库](https://github.com/allenai/molmo2)
+- [论文](https://arxiv.org/abs/2601.10611)
+- [Hugging Face Models](https://huggingface.co/collections/allenai/molmo2)
 
 ---
 
@@ -827,6 +909,7 @@ result = tool.call(
 apt-get install tmux
 pip install torch torchvision
 pip install groundingdino_py supervision moondream
+pip install ai2-molmo2 accelerate sentencepiece
 ```
 
 创建checkpoints目录：
@@ -887,4 +970,9 @@ python spagent/external_experts/OrientAnythingV2/oa_v2_server.py \
 # 视觉语言模型服务
 python spagent/external_experts/moondream/md_server.py \
   --port 20024
+
+# Molmo2 多模态推理服务
+python spagent/external_experts/Molmo2/molmo2_server.py \
+  --checkpoint allenai/Molmo2-4B \
+  --port 20035
 ```
