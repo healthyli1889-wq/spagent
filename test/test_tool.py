@@ -35,6 +35,12 @@ Usage:
     # Test with mock service (no API keys needed)
     python test/test_tool.py --tool veo --image dummy --prompt "test video" --use_mock
     python test/test_tool.py --tool sora --image dummy --prompt "test video" --use_mock
+
+    # Test Molmo2 (real server)
+    python test/test_tool.py --tool molmo2 --image assets/dog.jpeg --task qa --prompt "Describe the dog" --server_url http://localhost:20035
+
+    # Test Molmo2 (mock mode)
+    python test/test_tool.py --tool molmo2 --image assets/dog.jpeg --task point --prompt "Point to the dog" --use_mock --save_annotated
 """
 
 import sys
@@ -53,6 +59,12 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 
 # ============================================================
@@ -286,6 +298,70 @@ def test_detection(
 
 
 # ============================================================
+# Molmo2 Tool Test
+# ============================================================
+
+def test_molmo2(
+    image_paths: List[str],
+    task: str = "qa",
+    prompt: Optional[str] = None,
+    server_url: str = "http://localhost:20035",
+    use_mock: bool = True,
+    save_annotated: bool = True,
+    output_dir: Optional[str] = None,
+) -> Optional[str]:
+    """
+    Directly test Molmo2 multimodal reasoning / pointing tool.
+    """
+    from spagent.tools import Molmo2Tool
+
+    for p in image_paths:
+        if not os.path.exists(p):
+            logger.error(f"Image not found: {p}")
+            return None
+
+    logger.info("=" * 60)
+    logger.info("Molmo2 Tool Test")
+    logger.info("=" * 60)
+    logger.info(f"  Input images     : {image_paths}")
+    logger.info(f"  Task             : {task}")
+    logger.info(f"  Prompt           : {prompt or '(tool default)'}")
+    logger.info(f"  Server URL       : {server_url}")
+    logger.info(f"  Use mock         : {use_mock}")
+    logger.info(f"  Save annotated   : {save_annotated}")
+    logger.info(f"  Output dir       : {output_dir or '(system temp)'}")
+    logger.info("-" * 60)
+
+    tool = Molmo2Tool(
+        use_mock=use_mock,
+        server_url=server_url,
+        output_dir=output_dir,
+    )
+
+    result = tool.call(
+        image_path=image_paths if len(image_paths) > 1 else image_paths[0],
+        task=task,
+        prompt=prompt,
+        save_annotated=save_annotated,
+    )
+
+    if not result.get("success"):
+        logger.error(f"Molmo2 tool failed: {result.get('error', 'unknown error')}")
+        return None
+
+    logger.info("Molmo2 tool succeeded!")
+    logger.info(f"  Response         : {result.get('response_text', '')[:200]}")
+
+    output_path = result.get("output_path")
+    if output_path and os.path.exists(output_path):
+        logger.info(f"  Output saved     : {output_path}")
+        return output_path
+
+    logger.info("  No output image generated for this task.")
+    return "OK"
+
+
+# ============================================================
 # Veo Video Generation Tool Test
 # ============================================================
 
@@ -450,7 +526,7 @@ def parse_args():
         "--tool",
         type=str,
         required=True,
-        choices=["pi3", "pi3x", "depth", "segmentation", "detection", "veo", "sora"],
+        choices=["pi3", "pi3x", "depth", "segmentation", "detection", "veo", "sora", "molmo2"],
         help="Which tool to test.",
     )
     parser.add_argument(
@@ -508,6 +584,20 @@ def parse_args():
         help="Text prompt for object detection (default: 'object'). Also used as the video prompt for veo/sora.",
     )
 
+    molmo2_group = parser.add_argument_group("Molmo2 options")
+    molmo2_group.add_argument(
+        "--task",
+        type=str,
+        default="qa",
+        choices=["qa", "caption", "point"],
+        help="Molmo2 task mode (default: qa).",
+    )
+    molmo2_group.add_argument(
+        "--save_annotated",
+        action="store_true",
+        help="Save annotated image(s) when task=point.",
+    )
+
     # --- Video generation (Veo / Sora) specific ---
     vid_group = parser.add_argument_group("Video generation options (Veo / Sora)")
     vid_group.add_argument(
@@ -541,7 +631,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    image_required_tools = {"pi3", "pi3x", "depth", "segmentation", "detection"}
+    image_required_tools = {"pi3", "pi3x", "depth", "segmentation", "detection", "molmo2"}
     if args.tool in image_required_tools and not args.image:
         print(f"Error: --image is required for tool '{args.tool}'")
         sys.exit(1)
@@ -614,6 +704,18 @@ def main():
             aspect_ratio=args.aspect_ratio,
             use_mock=args.use_mock,
             output_dir=args.output_dir,
+        )
+
+    elif args.tool == "molmo2":
+        server = args.server_url or "http://localhost:20035"
+        result_path = test_molmo2(
+            image_paths=args.image,
+            task=args.task,
+            prompt=None if args.task == "caption" and args.prompt == "object" else args.prompt,
+            server_url=server,
+            use_mock=args.use_mock,
+            save_annotated=args.save_annotated,
+            output_dir=None if args.output_dir == "outputs/tool_test" else args.output_dir,
         )
 
     # --- summary ---
