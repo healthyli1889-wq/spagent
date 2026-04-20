@@ -38,6 +38,7 @@ external_experts/
 | **SAM2** | `SegmentationTool` | Image/Video Segmentation | High-precision segmentation tasks, precisely segment objects in images | Server (port 20020) | `image_path`, `point_coords`(optional), `point_labels`(optional), `box`(optional) |
 | **GroundingDINO** | `ObjectDetectionTool` | Open-vocabulary Object Detection | Detect arbitrary objects based on text descriptions | Server (port 20022) | `image_path`, `text_prompt`, `box_threshold`, `text_threshold` |
 | **Moondream** | `MoondreamTool` | Vision Language Model | Image understanding and Q&A, answer natural language questions based on image content | Server (port 20024) | `image_path`, `task`, `object_name` |
+| **Molmo2** | `Molmo2Tool` | Multimodal Reasoning & Point Grounding | Run Molmo2 through a local service for image QA, captioning, and point grounding with optional annotated outputs | Server (port 20025) | `image_path`, `task`, `prompt`(optional), `save_annotated`(optional), `max_new_tokens`(optional) |
 | **Pi3** | `Pi3Tool` | 3D Reconstruction | Generate 3D point clouds and multi-view rendered images from images | Server (port 20030) | `image_path`, `azimuth_angle`, `elevation_angle` |
 | **Pi3X** | `Pi3XTool` | 3D Reconstruction (Enhanced) | Upgraded Pi3 with smoother point clouds, metric scale, and optional multimodal conditioning | Server (port 20031) | `image_path`, `azimuth_angle`, `elevation_angle` |
 | **VGGT** | `VGGTTool` | Multi-view 3D Reconstruction & Camera Pose Estimation | Reconstruct 3D point clouds and estimate camera poses from multiple images or video frames | 20032 | `image_paths`, `azimuth_angle`, `elevation_angle`, `rotation_reference_camera`, `camera_view` |
@@ -241,6 +242,126 @@ export MOONDREAM_API_KEY="your_api_key"
 **Resources**:
 - [Official Website](https://moondream.ai/)
 - [API Documentation](https://docs.moondream.ai/)
+
+---
+
+### 4.1 Molmo2 - Multimodal Reasoning & Point Grounding Service
+
+**Function**: Run Molmo2 through a local service for image question answering, captioning, and point-driven grounding.
+
+**Features**:
+- Follows the same deployment pattern as other heavy SPAgent tools: local server + HTTP client + mock service
+- Supports three task modes: `qa`, `caption`, and `point`
+- Supports point grounding with optional annotated image outputs
+- Mock mode is available for development and testing
+
+**File Structure**:
+```text
+spagent/external_experts/Molmo2/
+├── download_weights.py
+├── molmo2_server.py
+├── molmo2_client.py
+├── mock_molmo2_service.py
+├── point_utils.py
+└── __init__.py
+```
+
+**Recommended Installation**:
+```bash
+pip install -r requirements.txt
+pip install "transformers>=4.57,<5" accelerate sentencepiece huggingface_hub
+```
+
+Optional upstream install:
+```bash
+git clone https://github.com/allenai/molmo2.git
+cd molmo2
+pip install torchcodec
+pip install -e .[all]
+```
+
+**Download Weights**:
+```bash
+# Download a Hugging Face snapshot locally
+python spagent/external_experts/Molmo2/download_weights.py \
+    --repo allenai/Molmo2-4B \
+    --local-dir checkpoints/molmo2/Molmo2-4B
+
+# Point the server at the downloaded directory
+export MOLMO2_MODEL=checkpoints/molmo2/Molmo2-4B
+```
+
+**Start Server**:
+```bash
+python spagent/external_experts/Molmo2/molmo2_server.py \
+    --checkpoint allenai/Molmo2-4B \
+    --port 20025
+```
+
+**Parameters**:
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `image_path` | string | ✅ | — | Path to the input image |
+| `task` | string | ❌ | `"qa"` | One of `qa`, `caption`, or `point` |
+| `prompt` | string | ❌ | task-specific default | Question, caption instruction, or pointing instruction |
+| `save_annotated` | boolean | ❌ | `True` | Save annotated point-grounding outputs when `task="point"` |
+| `max_new_tokens` | integer | ❌ | `200` | Maximum generation length for Molmo2 responses |
+
+Default prompts:
+- `qa`: `What do you see in this image? Answer briefly.`
+- `caption`: `Describe this image.`
+- `point`: `Point to the requested location. Output pointing coordinates in the model's standard format.`
+
+**Python Example**:
+```python
+from spagent.tools import Molmo2Tool
+
+tool = Molmo2Tool(
+    use_mock=False,
+    server_url="http://localhost:20025",
+    output_dir="outputs/molmo2",
+)
+
+qa_result = tool.call(
+    image_path="assets/dog.jpeg",
+    task="qa",
+    prompt="What animal is shown here?",
+    max_new_tokens=64,
+)
+print(qa_result["response_text"])
+
+caption_result = tool.call(
+    image_path="assets/dog.jpeg",
+    task="caption",
+)
+print(caption_result["response_text"])
+
+point_result = tool.call(
+    image_path="assets/dog.jpeg",
+    task="point",
+    prompt="Point to the dog.",
+    save_annotated=True,
+)
+print(point_result["result"]["points_by_image"])
+print(point_result["output_path"])  # system temp dir by default unless output_dir is set
+```
+
+**Direct Tool Test**:
+```bash
+python test/test_tool.py --tool molmo2 --image assets/dog.jpeg --task qa --prompt "Describe the dog" --server_url http://localhost:20025
+python test/test_tool.py --tool molmo2 --image assets/dog.jpeg --task caption --server_url http://localhost:20025
+python test/test_tool.py --tool molmo2 --image assets/dog.jpeg --task point --prompt "Point to the dog" --use_mock --save_annotated
+
+# Unit tests
+pytest test/test_molmo2_tool.py -v
+python -m unittest test.test_molmo2_expert -v
+```
+
+**Resources**:
+- [Official Repository](https://github.com/allenai/molmo2)
+- [Paper](https://arxiv.org/abs/2601.10611)
+- [Hugging Face Models](https://huggingface.co/collections/allenai/molmo2)
 
 ---
 
@@ -847,6 +968,7 @@ Ensure necessary dependencies are installed:
 apt-get install tmux
 pip install torch torchvision
 pip install groundingdino_py supervision moondream
+pip install ai2-molmo2 accelerate sentencepiece
 ```
 
 Create checkpoints directory:
@@ -909,4 +1031,9 @@ python spagent/external_experts/OrientAnythingV2/oa_v2_server.py \
 # Vision language model service
 python spagent/external_experts/moondream/md_server.py \
   --port 20024
+
+# Molmo2 multimodal reasoning service
+python spagent/external_experts/Molmo2/molmo2_server.py \
+  --checkpoint allenai/Molmo2-4B \
+  --port 20025
 ```
